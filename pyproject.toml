@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-usage-lite"
+version = "0.1.0"
+description = "Local Claude Code session usage and cost reports with optional quota snapshots"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "ProgrammerDream"}]
+dependencies = []
+
+[project.scripts]
+claude-usage = "claude_usage:main"
+
+[project.urls]
+Repository = "https://github.com/ProgrammerDream/claude-usage-lite"
+Issues = "https://github.com/ProgrammerDream/claude-usage-lite/issues"
+
+[tool.setuptools]
+py-modules = ["claude_usage"]

@@ -286,18 +286,30 @@ def snapshot(args):
                 all=totals(all_rows), recent=totals(recent),
                 within=totals(within) if within is not None else None, warnings=warnings)
 
+def reset_text(info, now):
+    end = info.get("reset")
+    if end is None:
+        return "重置未知"
+    if info.get("expired") or end <= now:
+        return "原重置 " + stamp(end) + "，已过期待刷新"
+    minutes = math.ceil((end - now).total_seconds() / 60)
+    days, remainder = divmod(minutes, 1440)
+    hours, mins = divmod(remainder, 60)
+    remaining = ((str(days) + "天") if days else "") + ((str(hours) + "小时") if hours else "") + str(mins) + "分"
+    return "重置 " + stamp(end) + "，剩 " + remaining
+
 def render(s, args, compact=False, previous=None):
     parts = [stamp(s["now"]) + " 北京时间"]
     for name, info in s["limits"].items():
         if info["expired"]:
-            parts.append(name + " 缓存已过期")
+            parts.append(name + " 缓存已过期（" + reset_text(info, s["now"]) + "）")
             continue
         val = info["percent"]
         delta = ""
         if previous and name in previous:
             diff = val - previous[name]
             delta = ("(%+g)" % diff) if diff >= 0 else "(重置/回落)"
-        parts.append("%s %g%%%s" % (name, val, delta))
+        parts.append("%s %g%%%s（%s）" % (name, val, delta, reset_text(info, s["now"])))
     if not s["limits"]:
         parts.append("账号额度未知")
     if compact:

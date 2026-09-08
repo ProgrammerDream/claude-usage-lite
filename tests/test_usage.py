@@ -113,6 +113,30 @@ class UsageTests(unittest.TestCase):
         self.assertIsNone(start)
         self.assertTrue(limits['5小时']['expired'])
 
+    def test_reset_text_timezone_countdown_and_expiration(self):
+        now = datetime(2026, 9, 8, 18, 21, tzinfo=timezone.utc)
+        end = datetime(2026, 9, 8, 22, 30, tzinfo=timezone.utc)
+        self.assertEqual(usage.reset_text(dict(reset=end, expired=False), now),
+                         '重置 09-09 06:30:00，剩 4小时9分')
+        self.assertEqual(usage.reset_text(dict(reset=None), now), '重置未知')
+        self.assertIn('已过期待刷新', usage.reset_text(dict(reset=end), end))
+        self.assertIn('剩 6天0分', usage.reset_text(dict(reset=now+timedelta(days=6)), now))
+
+    def test_status_line_includes_separate_reset_times(self):
+        from types import SimpleNamespace
+        s = dict(now=self.now, limits={
+            '5小时': dict(percent=37, reset=self.now+timedelta(hours=2), expired=False),
+            '总周': dict(percent=4, reset=self.now+timedelta(days=3), expired=False),
+        }, groups={}, recent=usage.totals([]), all=usage.totals([]), within=None,
+                 fetched=0, note='local', warnings=[])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            usage.render(s, SimpleNamespace(hours=24), compact=True)
+        self.assertIn('5小时 37%（重置 ', out.getvalue())
+        self.assertIn('总周 4%（重置 ', out.getvalue())
+        self.assertIn('剩 2小时0分', out.getvalue())
+        self.assertIn('剩 3天0分', out.getvalue())
+
     def test_429_cooldown_survives_next_invocation(self):
         credentials = self.base / 'fixture-credentials.json'
         credentials.write_text(json.dumps({'claudeAiOauth': {'accessToken': 'test-placeholder'}}))
